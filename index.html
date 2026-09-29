@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>مخطط إجراءات التعيينات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700&display=swap">
+<style>
+/* Layout: RTL swimlane — one column per department, one row per step, flow top→bottom; details panel beside the board */
+:root{
+  --bg:#F2F5F4; --surface:#FFFFFF; --ink:#1B2A2E; --muted:#5D6D70; --line:#D3DCDB;
+  --lane-a:#E9EFEE; --lane-b:#F6F8F8; --head:#DDE7E5;
+  --accent:#0E6B63; --accent-ink:#FFFFFF; --accent-soft:#D8ECE9;
+  --amber:#8F5B0E; --amber-bg:#FBEFD9; --risk:#A93F2B; --risk-bg:#F8E3DD; --zero:#E3E9E8;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1517; --surface:#182124; --ink:#E3ECEA; --muted:#94A5A4; --line:#2B383B;
+  --lane-a:#152023; --lane-b:#11191B; --head:#1E2A2D;
+  --accent:#43B7AA; --accent-ink:#08201D; --accent-soft:#16332F;
+  --amber:#E7B25A; --amber-bg:#3A2C12; --risk:#EE8B75; --risk-bg:#3A1E18; --zero:#243134; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1517; --surface:#182124; --ink:#E3ECEA; --muted:#94A5A4; --line:#2B383B;
+  --lane-a:#152023; --lane-b:#11191B; --head:#1E2A2D;
+  --accent:#43B7AA; --accent-ink:#08201D; --accent-soft:#16332F;
+  --amber:#E7B25A; --amber-bg:#3A2C12; --risk:#EE8B75; --risk-bg:#3A1E18; --zero:#243134; color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6}
+.wrap{direction:rtl;padding-inline:16px;padding-block:24px 48px;max-width:1600px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+h1{font-family:var(--f-display);font-size:1.6rem;margin:0;text-wrap:balance;line-height:1.35}
+.meta{color:var(--muted);font-size:.85rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ver{background:var(--ink);color:var(--bg);font-weight:600;padding:2px 10px;border-radius:4px;font-size:.78rem;letter-spacing:.04em}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{font:inherit;font-weight:600;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 12px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--accent);border-color:var(--accent)}
+.tab:focus-visible,.step:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.kpi b{display:block;font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1.3}
+.kpi span{color:var(--muted);font-size:.8rem}
+.kpi.sla b{color:var(--accent)}
+.note{background:var(--amber-bg);color:var(--ink);border-radius:6px;padding:8px 12px;font-size:.85rem;white-space:pre-line}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);align-items:center}
+.legend > span{display:inline-flex;gap:6px;align-items:center}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
+.scroller{overflow:auto;max-height:78vh;border:1px solid var(--line);border-radius:8px;background:var(--lane-b)}
+.board{position:relative;display:grid;row-gap:34px;padding-bottom:24px}
+.lanebg{grid-row:1 / -1;border-inline-start:1px solid var(--line)}
+.lanebg.alt{background:var(--lane-a)}
+.lanehead{grid-row:1;position:sticky;top:0;z-index:3;background:var(--head);border-bottom:1px solid var(--line);border-inline-start:1px solid var(--line);
+  padding:10px 8px;font-weight:700;font-size:.8rem;text-align:center;display:flex;align-items:center;justify-content:center;min-height:56px;line-height:1.4}
+.cell{z-index:2;padding-inline:8px;align-self:start;display:flex;justify-content:center}
+.step{width:100%;text-align:start;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.step:hover{border-color:var(--accent)}
+.step.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.step .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.num{font-weight:700;font-size:.75rem;background:var(--ink);color:var(--bg);min-width:22px;height:22px;border-radius:11px;display:inline-grid;place-items:center;padding-inline:5px;font-variant-numeric:tabular-nums}
+.step .t{font-weight:600;font-size:.82rem;line-height:1.45}
+.step .foot{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.72rem;color:var(--muted)}
+.dur{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sla{font-size:.72rem;font-weight:700;border-radius:4px;padding:1px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sla.def{background:var(--accent);color:var(--accent-ink)}
+.sla.zero{background:var(--zero);color:var(--muted)}
+.sla.na{background:var(--amber-bg);color:var(--amber);border:1px dashed var(--amber)}
+.flag{display:inline-flex;align-items:center;gap:3px;color:var(--risk);font-weight:600;white-space:nowrap}
+.flag i,.legend i.fl{width:14px;height:14px;border-radius:50%;background:var(--risk);color:var(--surface);font-style:normal;font-size:10px;display:inline-grid;place-items:center;font-weight:700}
+.hand{font-size:.72rem;border:1px dashed var(--muted);color:var(--muted);background:var(--surface);border-radius:12px;padding:1px 9px;margin-top:10px;white-space:nowrap;cursor:pointer}
+.hand.sel{border-color:var(--accent);color:var(--accent)}
+svg.links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
+.seq{stroke:var(--ink);stroke-width:1.4;fill:none;opacity:.55}
+.par{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 4;fill:none}
+.seq.hl{stroke:var(--accent);opacity:1;stroke-width:2}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:12px;max-height:82vh;overflow:auto}
+.panel h2{font-family:var(--f-display);font-size:1.05rem;margin:0;line-height:1.5;text-wrap:balance}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:.84rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:500}
+.lbl{font-size:.75rem;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-bottom:4px}
+.txt{white-space:pre-line;font-size:.86rem}
+.chal{background:var(--risk-bg);border-radius:6px;padding:10px 12px;font-size:.84rem;white-space:pre-line}
+.nav{display:flex;gap:8px}
+.nav button{flex:1;font:inherit;font-size:.82rem;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:6px;cursor:pointer}
+.nav button:disabled{opacity:.4;cursor:default}
+.src{font-size:.78rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.step{transition:border-color .15s,box-shadow .15s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="meta"><span class="ver">V1.0</span><span>مسودة للمراجعة · سبتمبر 2026</span></div>
+      <h1>إجراءات إدارة التعيينات — مخطط وظيفي متقاطع</h1>
+    </div>
+    <div class="meta">المصدر: ملف إجراءات إدارة التعيينات (Excel)</div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <section class="kpis" id="kpis"></section>
+  <div class="note" id="note" hidden></div>
+  <div class="legend">
+    <span><span class="sla def"><bdi>SLA</bdi> · 3 أيام</span> مدة SLA محددة</span>
+    <span><span class="sla zero"><bdi>SLA</bdi> · 0</span> SLA = صفر في الملف</span>
+    <span><span class="sla na"><bdi>SLA</bdi> · غير محدد</span> لا توجد قيمة SLA</span>
+    <span><span class="hand" style="margin:0">مشارك · 8</span> الجهة المشاركة في الخطوة</span>
+    <span><i class="fl">!</i> توجد تحديات</span>
+  </div>
+  <div class="main">
+    <div class="scroller"><div class="board" id="board"></div></div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+  <p class="src">الأرقام بأيام العمل كما وردت في الملف. العناوين المختصرة داخل المربعات من إعدادنا؛ النص الكامل لكل إجراء يظهر في لوحة التفاصيل.</p>
+</div>
+
+<script>
+const DATA = [{"key": "plan", "title": "أولا :تخطيط العمالة", "note": "", "steps": [{"n": 1, "title": "وضع استراتيجية التعيين وخطة العمالة السنوية", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "المسئول الأول بالمجموعة", "action": "وضع استراتيجيات التعيين وتحديد الاحتياجات السنوية الخاص بالمجموعات التابعة لشريك الأعمال واعداد خطة العمالة السنوية داخلي / خارجي وتوزيع الاحتياجات (خبرات / حديثي التخرج) وارسالها الى قطاع الكفاءة المؤسسية للمراجعة وابداء الرأي ثم الاعتماد.", "time": "في بدأيه أغسطس الي منتصف سبتمبر", "sla": null, "chal": null}, {"n": 2, "title": "مراجعة الاحتياجات وتحديث الهيكل التنظيمي واعتمادها", "owner": "الكفاءة المؤسسية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "استلام الاحتياجات السنوية من شركاء الاعمال واستقطاب الكفاءات ومراجعتها وتحديث الهيكل التنظيمي لجميع القطاعات والفروع ثم اعتمادها من لجنة الموارد البشرية والادارة العليا للبنك وارسالها لإدارة استقطاب الكفاءات.", "time": null, "sla": null, "chal": null}, {"n": 3, "title": "موافاة المراجعة والحسابات بموازنة خطة العمالة", "owner": "الأجور والمزايا", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "موافاة \"المراجعة والحسابات \" بمجموعة الأجور والمزايا بالموازنة الخاص بخطة العمالة.", "time": "منتصف شهر سبتمبر الي نهاية سبتمبر \n\" أسبوعين عمل \"", "sla": null, "chal": null}, {"n": 4, "title": "رفع خطة العمالة على الأنظمة", "owner": "الكفاءة المؤسسية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "رفع خطة العمالة علي الأنظمة.", "time": "الربع الأخير من العام", "sla": null, "chal": null}]}, {"key": "ext", "title": "ثانيا: إتمام عملية الاختيار للمرشحين تعيين خارجي", "note": "*التأكد من تجهيز الاختبارات ووسائل القياس للمرشحين المختارين وتحديد موعد لهم ( 5 أيام عمل ) في حال وجود تعاقد ساري / 3 شهور في حال المناقصات \"شركات مقدمي الخدمة\"", "steps": [{"n": 1, "title": "تحديد مصادر شغل الوظيفة", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "البدء في تحديد المصادر لشغل الوظيفة (مثل: السير الذاتية المتاحة بقاعدة بيانات البنك- المواقع الالكترونية المتعامل معها....الخ).", "time": 10, "sla": 0, "chal": null}, {"n": 2, "title": "اختيار المرشحين وفق الخبرات المطلوبة", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "اختيار مرشحين للوظيفة وفقاً للخبرات والعناصر المطلوبة مع مراعاة بعد مكان اقامة المرشح عن مقر العمل وجميع العوامل الاخرى التي تحكم عملية التعيين.", "time": 5, "sla": 0, "chal": null}, {"n": 3, "title": "مقابلات الموارد البشرية (CBI)", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "عمل مقابلات الموارد البشرية (CBI interviews) للمجتازين لاختبارات اللغة الإنجليزية والقدرات (الخريجين الجدد) واختبارات أخرى (الخبرات).", "time": 5, "sla": 0, "chal": null}, {"n": 4, "title": "تنظيم المقابلات الفنية", "owner": "استقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "تنظيم والتأكد من اتمام المقابلات الفنية بالتنسيق مع السادة شركاء اعمال الموارد البشرية.", "time": 5, "sla": 0, "chal": "قد يستغرق 10 ايام \n واكثر في قطاعات تكنولوجيا المعلومات"}, {"n": 5, "title": "إتاحة طلب التوظيف على النظام", "owner": "شركاء الاعمال", "part": "استقطاب الكفاءات", "action": "قيام شريك الاعمال باتاحة طلب التوظيف علي النظام للموظف المختص بقطاع استقطاب الكفاءات للبدء في عملية التوظيف.", "time": 1, "sla": 1, "chal": "قد يستغرق 2 يوم"}, {"n": 6, "title": "إعداد مذكرة المجتازين واعتمادها", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "اعداد مذكرات للمجتازين كافة الاختبارات والمقابلات واعتمادها من السلطة المختصة وفقا والتفويض وطلب تجهيز أوراق التعيين من المرشح.", "time": 1, "sla": 1, "chal": "قد يستغرق 5 أيام لاستيفاء التوقيع"}, {"n": 7, "title": "ربط المرشحين بطلبات التوظيف", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "ربط المرشحين علي طلبات التوظيف بالأنظمة لاستكمال عمليات التعيين.", "time": 1, "sla": 1, "chal": "وجود بعض المعوقات في فتح طلبات التوظيف تستغرق 5 أيام عمل"}, {"n": 8, "title": "إرسال مذكرة التعيين المعتمدة", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "عمليات الموارد البشرية", "action": "ارسال مذكرة التعيين المعتمدة الي قطاع عمليات الموارد البشرية للبدء في مراجعه كافة بياناتها.", "time": 2, "sla": 2, "chal": null}, {"n": 9, "title": "مراجعة البيانات على Internal Portal", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "يقوم الموظف المختص بالدخول علي  Internal Portal لمتابعه المرشحين والتحقق من استيفائهم البيانات والمستندات المطلوبة والتأكد من ظهور بياناتهم على النظام واذا كانت البيانات كاملة يتم ادراج بياناتهم بنظام الفحص الطبي والامنى للمستوى الاشرافي.\n*عند مراجعة المستوى الاشرافي للبيانات، اذا كانت بيانات تحتاج لتعديل يتم الرجوع للموظف المختص للتواصل مع المرشح لإجراء التعديلات اللازمة، إذا كانت البيانات كاملة يتم إغلاق التعديل (بدء الاستعلام الأمني و الطبي).\nفي حال وجود عدم استكمال بيانات المرشح يتم التواصل مع المرشحين الذين لم يستكملوا بياناتهم ولمعرفه أسباب عدم استيفاء البيانات المطلوبة.", "time": 3, "sla": 3, "chal": null}, {"n": 10, "title": "استكمال البيانات الناقصة", "owner": "عمليات الموارد البشرية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "يتم الرجوع الي شركاء الاعمال واستقطاب الكفاءات لاستكمال البيانات المطلوبة.", "time": 3, "sla": 3, "chal": "قد يستغرق اكثر من 10 ايام لاستيفاء البيانات المطلوبة"}, {"n": 11, "title": "الاستعلام في قوائم الحظر", "owner": "عمليات الموارد البشرية", "part": "الالتزام المصرفي", "action": "استعلام علي المرشحين في قوائم الحظر \"يتم الاستعلام بكل خطوة قبل استلام العمل\"", "time": 2, "sla": 2, "chal": null}, {"n": 12, "title": "إرسال بيانات استعلام الأقارب والخبرة", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "يتم ارسال البيانات الضرورية (استعلام الأقارب، استعلام عن وجود خبره سابقه بمصرفنا عن طريق الشركات مقدمي الخدمة)، أي جزاءات أو قضايا لأقارب.", "time": 2, "sla": 2, "chal": "قد يستغرق 5 أيام"}, {"n": 13, "title": "الاستعلام الطبي ونموذج 111", "owner": "الخدمات الطبية", "part": "عمليات الموارد البشرية", "action": "اجراء الاستعلام الطبي و نموذج 111 .", "time": 5, "sla": 5, "chal": "فيما عدا الفحوصات التكميلية وفقاً والحالة، وبعض حالات فحص التأمين الصحي لأسباب مختلفة\nمدة صلاحية نتائج الفحص 6 أشهر و 3 اشهر في حال السيدات المتزوجات وكذا المرشحين المطلوب لهم فحوصات تكميلية وتجاوزوا هذه المدة"}, {"n": 14, "title": "استلام نتيجة الفحص الطبي ومطابقتها", "owner": "عمليات الموارد البشرية", "part": "الخدمات الطبية", "action": "موافاتنا بنتيجة الفحص الطبي ونموذج 111 من قطاع الخدمات الطبية والتأمينية بالبريد الداخلي ومطابقتها بمسوغات التعيين، يتم فصل كافة نتائج التحاليل الطبية من ملف الفحص الطبي وعمل كشوف بها وإرسالها للحفظ لمدة ستة أشهر فقط ويتم بعدها إعدامها لانتهاء صلاحية تلك التحاليل.", "time": 2, "sla": 2, "chal": null}, {"n": 15, "title": "استلام نتيجة التحريات الأمنية", "owner": "عمليات الموارد البشرية", "part": "الامن", "action": "استلام نتيجة التحريات الأمنية من قطاع الأمن من خلال النظام ويجب استيفاءها قبل استكمال التعيين للملتحقين بالوظائف في القطاعات التالية (قطاع الامن والامن السيبراني والموارد البشرية والقانونية والتدقيق الداخلي والتفتيش والرقابة الداخلية) وبخلاف ذلك يجوز التعيين علي عقد مدة 6 شهور لحين استيفاء الموافقات اللازمة.", "time": 30, "sla": 0, "chal": "قد يستغرق اكثر من 6 اشهر لاستلام نتيجة التحريات الأمنية"}, {"n": 16, "title": "معالجة النتيجة الأمنية (قيد البحث / غير لائق)", "owner": "عمليات الموارد البشرية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "*في حال ان نتيجة التحريات الأمنية \"قيد البحث\" يتم ابلاغ المرشح بمضمون ذلك لكي يقدم ما يثبت إنتهاء موقفه من قيد البحث لقطاعات الأمن الخارجية المختصة.\n*في حال ان نتيجة التحريات الأمنية غير لائق أمني والمرشح مكلف حالي او من احدى شركات الاسناد الخارجي يتم إنهاء تكليفه من البنك.\nثم يتم ابلاغ قطاع شركاء الاعمال واستقطاب الكفاءات باسمه للاعتذار له وتوفير البديل.", "time": 1, "sla": 1, "chal": "ارسال اشعار لشركاء الاعمال واستقطاب الكفاءت بشكل فوري في حالة رفض المرشح امنياً لتوفير الوقت"}, {"n": 17, "title": "توقيع العقد وتسليم العمل", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "*التواصل مع المقبولين لاستيفاء العقد وتوقيعه من الطرفين واستكمال أية اوراق أخرى مطلوبة من المرشح وتسليم العمل، و استيقاعهم على إقرارات التعيين وميثاق العمل المصرفي وعقد العمل من أربع نسخ.\n*في حالة عدم الحضور موعد العقد لمعرفة أسباب عدم حضورهم، واذا افادو بالاعتذار عن قبول التعيين يتم إخطار قطاع شركاء الاعمال و استقطاب الكفاءات باسمه للاعتذار له وتوفير البديل\n*ارسال بريد الكتروني لكافة الجهات المعنية وشريك العمل الخاص بالمجموعة المعنية تفيد تسلم المرشح للعمل.\n*ارسال بريد الكتروني للمناطق ببيانات المعينين الجدد للاحاطة.", "time": 1, "sla": 1, "chal": null}, {"n": 18, "title": "احتساب مدد الخبرة (3 سنوات فأكثر)", "owner": "عمليات الموارد البشرية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "يتم الاطلاع على مدد الخبرة الموثقة للمرشحين وفى حاله كونها 3سنوات فأكثر يتم ارسال بريد اليكترونى لقطاع استقطاب الكفاءات للإفادة عن ضم تلك المدد من عدمه وفى حاله الموافقة على ضم المدد 3 سنوات فأكثر يتم الإفادة بتعديل الوظيفة الى نمطي أ.\n*في حالة الرد من قطاع شركاء الاعمال و استقطاب الكفاءات انه لن يتم احتساب المدة الخاصة بالمرشح ، يتم ارجاع شهادات الخبرة للمرشحين و افادتهم بعدم احتياجنا لها.\n*في حالة الرد من قطاع شركاء الاعمال و استقطاب الكفاءات انه سيتم احتساب المدة الخاصة بالمرشح ، يتم تعديل مرتب التعاقد بعقد العمل الخاص بالمرشحين اصحاب الخبرات ، و حفظ البريد الوارد به موافقة قطاع شركاء الاعمال و استقطاب الكفاءات بملف المرشح.", "time": 1, "sla": 1, "chal": null}, {"n": 19, "title": "إبلاغ رئيس المجموعة بانتهاء التعيين", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "عمليات الموارد البشرية", "action": "قيام شريك العمل المختص بإبلاغ رئيس المجموعة/الفرع بالبريد الالكتروني بانتهاء عملية التعيين للمرشح/المرشحين بالإضافة الى اخطاره بتاريخ استلام العمل.", "time": 1, "sla": 1, "chal": null}, {"n": 20, "title": "منح الميزة / فتح الحساب", "owner": "عمليات الموارد البشرية", "part": "الأجور والمزايا", "action": "•\tفي حال وجود حساب للمرشح يتم استيفاء موافقة رئيس مجموعة الأجور والمزايا لمنح الميزة وإرساله الي الفرع .\n•\tفي حال عدم وجود حساب للمرشح يتم استيقاع المرشح علي طلب فتح الحساب يتم استيفاء موافقة رئيس مجموعة الأجور والمزايا لمنح الميزة وإرساله الي الفرع.", "time": "عميل قائم 3 أيام عمل \n\nعميل غير قائم  9 يوم عمل", "sla": 9, "chal": "قيام عمليات الموارد البشرية منح ميزة مباشر(منح / الغاء) دون الرجوع لمجموعة الأجور والمزايا للتعينات الجديدة فقط"}, {"n": 21, "title": "إرسال الرقم الوظيفي للمراجعة والمدفوعات", "owner": "عمليات الموارد البشرية", "part": "الأجور والمزايا", "action": "يتم ارسال رقم الموظف التعينات الجديدة الي قطاع المراجعة والمدفوعات لربطة بالحسابات.", "time": 1, "sla": 0, "chal": null}, {"n": 22, "title": "إعداد ملف المرشح ومسوغات التعيين", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "اعداد ملف لكل مرشح علي ان يحتوي علي مذكرة التعيين، ويرفق معها كافة المستندات \"مسوغات التعيين\".", "time": 2, "sla": 0, "chal": null}, {"n": 23, "title": "خطة التعيينات الربع سنوية لإدارة الدمج", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "إدارة دمج ومتابعة الموظفين", "action": "موافاة إدارة دمج ومتابعة الموظفين ببريد الاليكتروني من جانب شركاء الاعمال بخطة التعيينات الربع سنويه لتجهيز جميع الاحتياجات الخاصة بالمرشحين الجدد.", "time": "ربع سنوي", "sla": 0, "chal": "لا يوجد تبليغ"}, {"n": 24, "title": "إخطار إدارة الدمج ببيانات الموظف", "owner": "عمليات الموارد البشرية", "part": "إدارة دمج ومتابعة الموظفين", "action": "يتم موافاة إدارة دمج ومتابعة الموظفين ببريد الاليكتروني مستوفي البيانات الاتيه: رقم الوظيفي واسم الموظف والوظيفية والمدير المباشر.", "time": "قبل استلام العمل بـ 10 أيام عمل علي الأقل", "sla": 0, "chal": "الواقع الفعلي 3 أيام عمل قبل الاستلام"}, {"n": 25, "title": "إخطار المعرفة والتطوير بالعاملين الجدد", "owner": "عمليات الموارد البشرية", "part": "إدارة دمج ومتابعة الموظفين", "action": "يتم موافاة قطاع المعرفة والتطوير قائمة بأسماء العاملين الجدد وتدريب الخريجين وخبرات حتي نائب مدير عام.", "time": "قبل استلام العمل بـ 10 أيام عمل علي الأقل", "sla": 0, "chal": "الواقع الفعلي 3 أيام عمل قبل الاستلام"}, {"n": 26, "title": "استخراج كارت العلاج وكارت الحضور", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "استخراج كارت العلاج الطبي للعامل واسرته، وكذا كارت اثبات حضور وانصراف.", "time": "*كارت العلاج الطبي للاسر 7 يوم عمل\n*كارت الحضور والانصراف 30 يوم", "sla": 0, "chal": null}], "sheetTotal": {"time": 93, "sla": 35}}, {"key": "exp", "title": "ثانيا: إتمام عملية الاختيار للمرشحين ذوي الخبرات", "note": "", "steps": [{"n": 1, "title": "تحديد مصادر شغل الوظيفة", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "البدء في تحديد المصادر لشغل الوظيفة (مثل: السير الذاتية المتاحة بقاعدة بيانات البنك- المواقع الالكترونية المتعامل معها....الخ).", "time": 10, "sla": 0, "chal": null}, {"n": 2, "title": "تنظيم المقابلات الفنية", "owner": "استقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "تنظيم والتأكد من اتمام المقابلات الفنية بالتنسيق مع السادة شركاء اعمال الموارد البشرية.", "time": 5, "sla": 0, "chal": null}, {"n": 3, "title": "إتاحة طلب التوظيف على النظام", "owner": "شركاء الاعمال", "part": "استقطاب الكفاءات", "action": "قيام شريك الاعمال باتاحة طلب التوظيف علي النظام للموظف المختص بقطاع استقطاب الكفاءات للبدء في عملية التوظيف.", "time": 1, "sla": 1, "chal": "قد يستغرق 2 يوم"}, {"n": 4, "title": "ربط المرشحين بطلبات التوظيف", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "ربط المرشحين علي طلبات التوظيف بالأنظمة لاستكمال عمليات التعيين.", "time": 1, "sla": 1, "chal": "وجود بعض المعوقات في فتح طلبات التوظيف تستغرق 5 أيام عمل"}, {"n": 5, "title": "مذكرة التعيين للإدارة العليا (CHRO / Deputy CEO / CEO)", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "الإدارة العليا", "action": "اعداد مذكرة التعيين للعرض علي الإدارة العليا لأخذ الموافقات اللازمة (CHRO / Deputy CEO / CEO).", "time": 10, "sla": 10, "chal": "قد يستغرق 5 أيام لاستيفاء التوقيع"}, {"n": 6, "title": "إرسال مذكرة التعيين المعتمدة", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "عمليات الموارد البشرية", "action": "ارسال مذكرة التعيين المعتمدة الي قطاع عمليات الموارد البشرية للبدء في مراجعه كافة بياناتها.", "time": 2, "sla": 2, "chal": null}, {"n": 7, "title": "مراجعة البيانات على Internal Portal", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "*يقوم الموظف المختص بالدخول علي  Internal Portal لمتابعه المرشحين والتحقق من استيفائهم البيانات والمستندات المطلوبة والتأكد من ظهور بياناتهم على النظام واذا كانت البيانات كاملة يتم ادراج بياناتهم بنظام الفحص الطبي والامنى للمستوى الاشرافي.\n*عند مراجعة المستوى الاشرافي للبيانات، اذا كانت بيانات تحتاج لتعديل يتم الرجوع للموظف المختص للتواصل مع المرشح لإجراء التعديلات اللازمة، إذا كانت البيانات كاملة يتم إغلاق التعديل (بدء الاستعلام الأمني والطبي).\n*في حال وجود عدم استكمال بيانات المرشح يتم التواصل مع المرشحين الذين لم يستكملوا بياناتهم ولمعرفه أسباب عدم استيفاء البيانات المطلوبة.", "time": 3, "sla": 3, "chal": "قد يستغرق اكثر من 10 ايام لاستيفاء البيانات المطلوبة"}, {"n": 8, "title": "الاستعلام في قوائم الحظر", "owner": "عمليات الموارد البشرية", "part": "الالتزام المصرفي", "action": "استعلام علي المرشحين في قوائم الحظر \"يتم الاستعلام بكل خطوة قبل استلام العمل\".", "time": 2, "sla": 2, "chal": "الاستعلام عن المرشح بعد استلام مذكرة التعين وقبل امضاء العقد فقط"}, {"n": 9, "title": "إرسال بيانات استعلام الأقارب والخبرة", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "يتم ارسال البيانات الضرورية (استعلام الأقارب، استعلام عن وجود خبره سابقه بمصرفنا عن طريق الشركات مقدمي الخدمة)، أي جزاءات أو قضايا لأقارب.", "time": 2, "sla": 2, "chal": "قد يستغرق 5 أيام"}, {"n": 10, "title": "الاستعلام الطبي ونموذج 111", "owner": "الخدمات الطبية", "part": "عمليات الموارد البشرية", "action": "اجراء الاستعلام الطبي و نموذج 111 .", "time": 5, "sla": 5, "chal": "فيما عدا الفحوصات التكميلية وفقاً والحالة، وبعض حالات فحص التأمين الصحي لأسباب مختلفة\n\nمدة صلاحية نتائج الفحص 6 أشهر و 3 اشهر في حال السيدات المتزوجات وكذا المرشحين المطلوب لهم فحوصات تكميلية وتجاوزوا هذه المدة"}, {"n": 11, "title": "استلام نتيجة الفحص الطبي ومطابقتها", "owner": "عمليات الموارد البشرية", "part": "الخدمات الطبية", "action": "موافاتنا بنتيجة الفحص الطبي ونموذج 111 من قطاع الخدمات الطبية والتأمينية بالبريد الداخلي ومطابقتها بمسوغات التعيين، يتم فصل كافة نتائج التحاليل الطبية من ملف الفحص الطبي وعمل كشوف بها وإرسالها للحفظ لمدة ستة أشهر فقط ويتم بعدها إعدامها لانتهاء صلاحية تلك التحاليل.", "time": 2, "sla": 2, "chal": null}, {"n": 12, "title": "استلام نتيجة التحريات الأمنية", "owner": "عمليات الموارد البشرية", "part": "الامن", "action": "استلام نتيجة التحريات الأمنية من قطاع الأمن من خلال النظام ويجب استيفاءها قبل استكمال التعيين للملتحقين بالوظائف في القطاعات التالية (قطاع الامن والامن السيبراني والموارد البشرية والقانونية والتدقيق الداخلي والتفتيش والرقابة الداخلية) وبخلاف ذلك يجوز التعيين علي عقد مدة 6 شهور لحين استيفاء الموافقات اللازمة.", "time": 30, "sla": 0, "chal": "قد يستغرق اكثر من 6 اشهر لاستلام نتيجة التحريات الأمنية"}, {"n": 13, "title": "معالجة النتيجة الأمنية (قيد البحث / غير لائق)", "owner": "عمليات الموارد البشرية", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "*في حال ان نتيجة التحريات الأمنية \"قيد البحث\" يتم ابلاغ المرشح بمضمون ذلك لكي يقدم ما يثبت إنتهاء موقفه من قيد البحث لقطاعات الأمن الخارجية المختصة.\n*في حال ان نتيجة التحريات الأمنية غير لائق أمني و/او المرشح مكلف حالي او من احدى شركات الاسناد الخارجي يتم إنهاء تكليفه من البنك.\nثم يتم ابلاغ قطاع شركاء الاعمال واستقطاب الكفاءات باسمه للاعتذار له وتوفير البديل.", "time": 1, "sla": 1, "chal": "ارسال اشعار لشركاء الاعمال واستقطاب الكفاءت بشكل فوري في حالة رفض المرشح امنياً لتوفير الوقت"}, {"n": 14, "title": "توقيع العقد وتسليم العمل", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "*التواصل مع المقبولين لاستيفاء العقد وتوقيعه من الطرفين واستكمال أية اوراق أخرى مطلوبة من المرشح وتسليم العمل، و استيقاعهم على إقرارات التعيين وميثاق العمل المصرفي وعقد العمل من أربع نسخ.\n*ارسال بريد الكتروني لكافة الجهات المعنية وشريك العمل الخاص بالمجموعة المعنية تفيد تسلم المرشح للعمل.\n*ارسال بريد الكتروني للمناطق ببيانات المعينين الجدد للاحاطة.", "time": 1, "sla": 1, "chal": null}, {"n": 15, "title": "إبلاغ رئيس المجموعة بانتهاء التعيين", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "عمليات الموارد البشرية", "action": "قيام شريك العمل المختص بإبلاغ رئيس المجموعة/الفرع بالبريد الالكتروني بانتهاء عملية التعيين للمرشح/المرشحين بالإضافة الى اخطاره بتاريخ استلام العمل.", "time": 1, "sla": 1, "chal": null}, {"n": 16, "title": "منح الميزة / فتح الحساب", "owner": "عمليات الموارد البشرية", "part": "الأجور والمزايا", "action": "*في حال وجود حساب للمرشح يتم استيفاء موافقة رئيس مجموعة الأجور والمزايا لمنح الميزة وإرساله الي الفرع .\n*في حال عدم وجود حساب للمرشح يتم استيقاع المرشح علي طلب فتح الحساب يتم استيفاء موافقة رئيس مجموعة الأجور والمزايا لمنح الميزة وإرساله الي الفرع.", "time": "عميل قائم 3 أيام عمل \n\nعميل غير قائم  9 يوم عمل", "sla": 9, "chal": "قيام عمليات الموارد البشرية منح ميزة مباشر(منح / الغاء) دون الرجوع لمجموعة الأجور والمزايا للتعينات الجديدة فقط"}, {"n": 17, "title": "إرسال الرقم الوظيفي للمراجعة والمدفوعات", "owner": "عمليات الموارد البشرية", "part": "الأجور والمزايا", "action": "ارسال رقم الموظف التعينات الجديدة الي قطاع المراجعة والمدفوعات لربطة بالحسابات.", "time": 1, "sla": 0, "chal": null}, {"n": 18, "title": "إعداد ملف المرشح ومسوغات التعيين", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "اعداد ملف لكل مرشح علي ان يحتوي علي مذكرة التعيين، ويرفق معها كافة المستندات \"مسوغات التعيين\".", "time": 2, "sla": 0, "chal": null}, {"n": 19, "title": "خطة التعيينات الربع سنوية لإدارة الدمج", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "إدارة دمج ومتابعة الموظفين", "action": "موافاة إدارة دمج ومتابعة الموظفين ببريد الاليكتروني من جانب شركاء الاعمال بخطة التعيينات الربع سنويه لتجهيز جميع الاحتياجات الخاصة بالمرشحين الجدد.", "time": "ربع سنوي", "sla": 0, "chal": "لا يوجد تبليغ"}, {"n": 20, "title": "إخطار إدارة الدمج ببيانات الموظف", "owner": "عمليات الموارد البشرية", "part": "إدارة دمج ومتابعة الموظفين", "action": "يتم موافاة إدارة دمج ومتابعة الموظفين ببريد الاليكتروني مستوفي البيانات الاتيه: رقم الوظيفي واسم الموظف والوظيفية والمدير المباشر.", "time": "قبل استلام العمل بـ 10 أيام عمل علي الأقل", "sla": 0, "chal": "الواقع الفعلي 3 أيام عمل قبل الاستلام"}, {"n": 21, "title": "إخطار المعرفة والتطوير بالعاملين الجدد", "owner": "عمليات الموارد البشرية", "part": "إدارة دمج ومتابعة الموظفين", "action": "يتم موافاة قطاع المعرفة والتطوير قائمة بأسماء العاملين الجدد وتدريب الخريجين وخبرات حتي نائب مدير عام.", "time": "قبل استلام العمل بـ 10 أيام عمل علي الأقل", "sla": 0, "chal": "الواقع الفعلي 3 أيام عمل قبل الاستلام"}, {"n": 22, "title": "استخراج كارت العلاج وكارت الحضور", "owner": "عمليات الموارد البشرية", "part": "عمليات الموارد البشرية", "action": "استخراج كارت العلاج الطبي للعامل واسرته، وكذا كارت اثبات حضور وانصراف.", "time": "*كارت العلاج الطبي للاسر 7 يوم عمل\n*كارت الحضور والانصراف 30 يوم", "sla": 0, "chal": null}, {"n": 23, "title": "إرسال البيانات المالية لتحديد الراتب", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "الأجور والمزايا", "action": "*ارسال كافة البيانات المالية ومتطلبات القطاع المعين عليه المرشح الى قطاع الاجور والمزايا لتحديد الراتب الشهري والمزايا الاخرى التي سيحصل عليها المرشح.\n*يتم الرجوع لقطاع الموازنة والحسابات للموافقة علي الراتب الشهري للمرشحين الجدد.", "time": 2, "sla": null, "chal": "مقترح للتطوير اضافه اجراء للتحقق مع تماشي العرض المالي للمرشح مع الموازنة المعتمدة"}, {"n": 24, "title": "إعداد العرض الوظيفي (Job Offer)", "owner": "الأجور والمزايا", "part": "شركاء الاعمال واستقطاب الكفاءات", "action": "اعداد عرض وظيفي (Job Offer) للتوقيع من المرشح.", "time": 2, "sla": null, "chal": null}, {"n": 25, "title": "موافقة المسئول الأول على العرض المالي", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "المسئول الأول بالمجموعات", "action": "الحصول على موافقة المسئول الأول بالمجموعات المعنيين على العرض المالي للمرشح.", "time": 1, "sla": null, "chal": "قد يستغرق 2 يوم"}, {"n": 26, "title": "تقديم العرض المالي والتفاوض مع المرشح", "owner": "شركاء الاعمال واستقطاب الكفاءات", "part": "الأجور والمزايا", "action": "التواصل مع المرشح لتقديم العرض المالي له والتفاوض معه والحصول على موافقته.", "time": 2, "sla": null, "chal": null}, {"n": 27, "title": "مخاطبة الرقابة الإدارية / البنك المركزي", "owner": "عمليات الموارد البشرية", "part": "هيئة الرقابة الإدارية", "action": "*لمرشحي وظيفة مدير عام فأعلى فقط: يتم ارسال خطاب موجه لهيئة الرقابة الإدارية لمعرفة مدى صلاحيتهم لشغل الوظيفة المرشحين لشغلها من عدمه.\n*لمرشحين وظيفة مدير عام فأعلى: في احدى الوظائف التنفيذية المحددة من البنك المركزي يتم اعداد خطاب موجه للبنك المركزي ومرفقاته للإفادة بالرأي في مدى صلاحيه المرشح لشغل الوظيفة المرشح لشغلها من عدمه.", "time": 2, "sla": null, "chal": null}, {"n": 28, "title": "استلام نتيجة الرقابة الإدارية / البنك المركزي", "owner": "عمليات الموارد البشرية", "part": "هيئة الرقابة الإدارية", "action": "استلام نتيجة الرقابة الإدارية و/ او البنك المركزي لصلاحية المرشح لشغل وظائف مدير عام فقط / فأعلى.", "time": 30, "sla": null, "chal": "قد يستغرق اكثر من 3 اشهر لاستلام النتيجة"}], "sheetTotal": {"time": 131, "sla": 40}}];
+const LANE_ORDER=["شركاء الاعمال واستقطاب الكفاءات","شركاء الاعمال","استقطاب الكفاءات","المسئول الأول بالمجموعة","المسئول الأول بالمجموعات","الإدارة العليا","الكفاءة المؤسسية","عمليات الموارد البشرية","الالتزام المصرفي","الخدمات الطبية","الامن","هيئة الرقابة الإدارية","الأجور والمزايا","إدارة دمج ومتابعة الموظفين"];
+const TAB_NAMES={plan:"أولاً: تخطيط العمالة",ext:"ثانياً (أ): التعيين الخارجي",exp:"ثانياً (ب): ذوو الخبرات"};
+const days=n=>n===1?"يوم":n===2?"يومان":(n>=3&&n<=10)?"أيام":"يوم";
+const fmtDays=n=>`${n} ${days(n)}`;
+function slaHTML(s){
+  if(s===null||s===undefined) return '<span class="sla na"><bdi>SLA</bdi> · غير محدد</span>';
+  if(s===0) return '<span class="sla zero"><bdi>SLA</bdi> · 0</span>';
+  return `<span class="sla def"><bdi>SLA</bdi> · ${fmtDays(s)}</span>`;
+}
+const durText=t=>t===null||t===undefined?"—":typeof t==="number"?fmtDays(t):t.replace(/\s+/g," ").trim();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let cur=1, sel=0;
+const board=document.getElementById('board'), panel=document.getElementById('panel');
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=DATA.map((s,i)=>`<button class="tab" role="tab" id="tab-${s.key}" aria-selected="${i===cur}" data-i="${i}">${TAB_NAMES[s.key]}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;sel=0;render()});
+}
+function renderKpis(s){
+  const st=s.steps, slaSum=st.reduce((a,x)=>a+(x.sla||0),0);
+  const naCount=st.filter(x=>x.sla===null).length, chal=st.filter(x=>x.chal).length;
+  const lanes=new Set(st.flatMap(x=>[x.owner,x.part])).size;
+  const dur=s.sheetTotal?`${s.sheetTotal.time} يوم`:"موسمي";
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><b>${st.length}</b><span>عدد الخطوات</span></div>
+    <div class="kpi sla"><b>${s.sheetTotal||slaSum?fmtDays(slaSum):"غير محدد"}</b><span>إجمالي SLA</span></div>
+    <div class="kpi"><b>${dur}</b><span>إجمالي المدة المستغرقة (حسب الملف)</span></div>
+    <div class="kpi"><b>${naCount}</b><span>خطوات بدون SLA</span></div>
+    <div class="kpi"><b>${chal}</b><span>خطوات بها تحديات</span></div>
+    <div class="kpi"><b>${lanes}</b><span>جهات مشاركة</span></div>`;
+  const n=document.getElementById('note');
+  n.hidden=!s.note; n.textContent=s.note||"";
+}
+function renderBoard(s){
+  const present=new Set(s.steps.flatMap(x=>[x.owner,x.part]));
+  const lanes=LANE_ORDER.filter(l=>present.has(l)).concat([...present].filter(l=>!LANE_ORDER.includes(l)));
+  const col=l=>lanes.indexOf(l)+1;
+  board.style.gridTemplateColumns=`repeat(${lanes.length},minmax(150px,1fr))`;
+  board.style.gridTemplateRows=`auto repeat(${s.steps.length},auto)`;
+  let h=lanes.map((l,i)=>`<div class="lanebg ${i%2?'alt':''}" style="grid-column:${i+1}"></div><div class="lanehead" style="grid-column:${i+1}">${esc(l)}</div>`).join('');
+  s.steps.forEach((x,i)=>{
+    const r=i+2;
+    h+=`<div class="cell" style="grid-row:${r};grid-column:${col(x.owner)}">
+      <button class="step" id="st-${i}" data-i="${i}" aria-label="الخطوة ${x.n}: ${esc(x.title)}">
+        <span class="top"><span class="num">${x.n}</span>${slaHTML(x.sla)}</span>
+        <span class="t">${esc(x.title)}</span>
+        <span class="foot"><span class="dur">المدة: ${esc(durText(x.time))}</span>${x.chal?'<span class="flag"><i>!</i>تحدٍّ</span>':''}</span>
+      </button></div>`;
+    if(x.part&&x.part!==x.owner) h+=`<div class="cell" style="grid-row:${r};grid-column:${col(x.part)}"><span class="hand" id="hd-${i}" data-i="${i}">مشارك · ${x.n}</span></div>`;
+  });
+  h+='<svg class="links" id="links" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink);opacity:.7"/></marker></defs><g id="lk"></g></svg>';
+  board.innerHTML=h;
+  board.querySelectorAll('.step,.hand').forEach(b=>b.onclick=()=>select(+b.dataset.i));
+  requestAnimationFrame(drawLinks);
+}
+function drawLinks(){
+  const g=document.getElementById('lk'); if(!g) return;
+  const B=board.getBoundingClientRect(), s=DATA[cur];
+  const R=el=>{const r=el.getBoundingClientRect();return{l:r.left-B.left,r:r.right-B.left,t:r.top-B.top,b:r.bottom-B.top,cx:(r.left+r.right)/2-B.left,cy:(r.top+r.bottom)/2-B.top}};
+  let p='';
+  s.steps.forEach((x,i)=>{
+    const a=R(document.getElementById('st-'+i));
+    const hd=document.getElementById('hd-'+i);
+    if(hd){const c=R(hd);const y=c.cy;const x1=c.cx<a.cx?a.l:a.r;const x2=c.cx<a.cx?c.r:c.l;p+=`<path class="par" d="M${x1} ${y} H${x2}"/>`;}
+    if(i<s.steps.length-1){
+      const b=R(document.getElementById('st-'+(i+1)));
+      const hl=(i===sel||i+1===sel)?' hl':'';
+      const d=Math.abs(a.cx-b.cx)<2?`M${a.cx} ${a.b} V${b.t-2}`:`M${a.cx} ${a.b} V${b.t-14} H${b.cx} V${b.t-2}`;
+      p+=`<path class="seq${hl}" style="color:var(${hl?'--accent':'--ink'})" d="${d}" marker-end="url(#ah)"/>`;
+    }
+  });
+  g.innerHTML=p;
+}
+function select(i,scroll){
+  sel=i; const s=DATA[cur], x=s.steps[i];
+  board.querySelectorAll('.step').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
+  board.querySelectorAll('.hand').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
+  panel.innerHTML=`
+    <div class="top" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="num">${x.n}</span>${slaHTML(x.sla)}</div>
+    <h2>${esc(x.title)}</h2>
+    <dl class="kv">
+      <dt>القطاع المسئول</dt><dd>${esc(x.owner)}</dd>
+      <dt>المشارك</dt><dd>${esc(x.part||'—')}</dd>
+      <dt>SLA</dt><dd>${x.sla===null?'غير محدد':fmtDays(x.sla)}</dd>
+      <dt>المدة المستغرقة</dt><dd class="txt">${esc(typeof x.time==='number'?fmtDays(x.time):(x.time||'—'))}</dd>
+    </dl>
+    <div><div class="lbl">الإجراء (النص الكامل)</div><div class="txt">${esc(x.action)}</div></div>
+    ${x.chal?`<div><div class="lbl">التحديات</div><div class="chal">${esc(x.chal)}</div></div>`:''}
+    <div class="nav"><button id="nx" ${i>=s.steps.length-1?'disabled':''}>الخطوة التالية</button><button id="pv" ${i<=0?'disabled':''}>الخطوة السابقة</button></div>`;
+  document.getElementById('nx').onclick=()=>select(i+1,true);
+  document.getElementById('pv').onclick=()=>select(i-1,true);
+  if(scroll) document.getElementById('st-'+i).scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+  drawLinks();
+}
+function render(){ renderTabs(); const s=DATA[cur]; renderKpis(s); renderBoard(s); select(Math.min(sel,s.steps.length-1)); }
+render();
+new ResizeObserver(()=>drawLinks()).observe(board);
+document.fonts&&document.fonts.ready.then(drawLinks);
+</script>
+
+</body>
+</html>
