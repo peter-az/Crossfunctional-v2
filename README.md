@@ -11,11 +11,12 @@ A cross-functional (swimlane) flowchart of the recruitment procedures (إجرا�
 | `data/recruitment-steps.json` | The steps extracted from the source Excel file. Each step has its owner, participant, action, time, SLA, and challenges. |
 | `scripts/` | Scripts used to build the outputs: extraction from Excel, the web and print templates, and PDF rendering with Playwright. |
 
-## View it as a website (GitHub Pages)
+## Live site
 
-1. In the repo, go to **Settings → Pages**.
-2. Under *Build and deployment*, choose **Deploy from a branch**. Set the branch to `main` and the folder to `/ (root)`, then click **Save**.
-3. After a minute, the site is live at `https://peter-az.github.io/crossfunctional-v2/`.
+- Flowchart: https://peter-az.github.io/Crossfunctional-v2/
+- PDF: https://peter-az.github.io/Crossfunctional-v2/pdf/Recruitment-Procedures-Flowchart-V1.pdf
+
+The site is served by GitHub Pages from the `gh-pages` branch. To publish changes, push them to `main`, then run `git push origin main:gh-pages`.
 
 ## Legend
 
